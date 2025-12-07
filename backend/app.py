@@ -10,12 +10,14 @@ def create_app():
     config = get_config()
     app.config.from_object(config)
     
-    # Validate configuration
+    # Validate configuration (warn but don't crash)
     try:
         config.validate()
+        print("✅ All environment variables configured")
     except ValueError as e:
-        print(f"Configuration error: {e}")
-        print("Please check your .env file and ensure all required variables are set.")
+        print(f"⚠️  Configuration warning: {e}")
+        print("⚠️  The app will start but API calls may fail until you configure your .env file")
+
     
     # Configure CORS
     CORS(app, origins=[
@@ -49,4 +51,4 @@ def create_app():
 # For local development
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
