@@ -2,7 +2,7 @@
 
 This example demonstrates how to create a dataset with enhanced metadata for the meta-prompt architecture.
 
-## Example: Emergency Room Wait Times Dataset
+## Example dataset: Emergency Room Wait Times Dataset
 
 ### Dataset Creation Request
 

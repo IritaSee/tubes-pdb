@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from config import get_config
+from backend.config import get_config
 
 def create_app():
     """Flask application factory"""
@@ -26,7 +26,7 @@ def create_app():
     
     # Register blueprints
     from backend.routes import auth, datasets, assignments, chat, submissions, grading
-    
+
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(datasets.bp, url_prefix='/api/datasets')
     app.register_blueprint(assignments.bp, url_prefix='/api/assignments')

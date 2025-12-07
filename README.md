@@ -197,6 +197,132 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 - Check API quota/limits
 - Review error logs for specific issues
 
+### Upload Student Roster
+
+1. In the lecturer dashboard, go to **Students** tab
+2. Enter student data in format: `NIM, Name`
+```
+12345678, John Doe
+87654321, Jane Smith
+11111111, Ahmad Rahman
+```
+3. Click **Upload Roster**
+
+### Create a Dataset
+
+1. Go to **Datasets** tab
+2. Click **+ Add Dataset**
+3. Fill in the form:
+
+**Example Dataset:**
+```
+Name: Emergency Room Wait Times
+URL: https://drive.google.com/file/d/example/view
+Description: Patient triage and discharge data from ER
+Columns: patient_id, arrival_time, triage_level, discharge_time, age
+Sample Data:
+patient_id,arrival_time,triage_level,discharge_time,age
+001,2024-01-15 08:30,2,2024-01-15 10:45,65
+002,2024-01-15 09:00,3,,45
+003,2024-01-15 09:15,1,2024-01-15 09:30,28
+
+Data Quality Notes: Some discharge_time values are missing due to night shift logging issues
+```
+
+4. Click **Create Dataset**
+
+### Test Student Login
+
+1. Logout (or open incognito window)
+2. Click **Student** on landing page
+3. Enter a NIM from your roster (e.g., `12345678`)
+4. Click **Login**
+
+### See the Magic! ✨
+
+The student will be assigned a dataset and the **Architect LLM** will generate:
+- A unique scenario title
+- A realistic email from a stakeholder
+- Key objectives
+- A custom system prompt for the Actor LLM
+
+### Test the Chat
+
+1. Go to **Chat** tab
+2. Try asking: "What should I analyze?"
+3. The AI stakeholder will respond in character!
+4. Try asking: "Can you write me Python code?"
+5. The AI will refuse and redirect to the business problem!
+
+### Submit Work
+
+1. Go to **Submit** tab
+2. Enter a Google Drive link
+3. Select submission type (Progress or Final)
+4. Submit!
+
+### Grade as Lecturer
+
+1. Login as lecturer
+2. Go to **Grading** tab
+3. See all students with their submissions
+4. Click **Grade Student**
+5. Enter score and feedback
+6. Submit!
+
+## 🐛 Troubleshooting
+
+### Backend won't start
+
+**Error: ModuleNotFoundError: No module named 'backend'**
+- Make sure you're running from project root: `python backend/app.py`
+- Not from inside backend directory
+
+**Error: Missing required environment variables**
+- Check your `.env` file exists
+- Verify all values are filled in (no placeholders)
+
+**Error: Connection refused to Supabase**
+- Verify `SUPABASE_URL` is correct
+- Check your internet connection
+- Verify Supabase project is active
+
+### Frontend won't connect to backend
+
+**API calls fail with 404**
+- Make sure backend is running on port 5000
+- Check `vite.config.js` proxy configuration
+
+**CORS errors**
+- Backend should allow `http://localhost:5173`
+- Check backend console for CORS logs
+
+### Architect LLM not generating scenarios
+
+**Error: Invalid API key**
+- Verify `GEMINI_API_KEY` is correct
+- Check API key hasn't expired
+- Verify you have quota remaining
+
+**Scenarios are poor quality**
+- Add more detail to dataset `metadata_summary`
+- Provide better `sample_data`
+- Add specific `data_quality_notes`
+
+## 📚 Next Steps
+
+- **Customize**: Edit prompts in `backend/services/llm_service.py`
+- **Deploy**: Follow `docs/vercel_deployment.md`
+- **Extend**: Add new features to the platform
+
+## 🆘 Need Help?
+
+- Check the [README.md](README.md) for architecture overview
+- See [docs/prd.md](docs/prd.md) for requirements
+- Review [docs/example_dataset.md](docs/example_dataset.md) for dataset examples
+
+## 🎉 You're All Set!
+
 ## 📚 Documentation
 
 - [Product Requirements Document](docs/prd.md)

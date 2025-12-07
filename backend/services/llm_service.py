@@ -9,7 +9,7 @@ config = get_config()
 genai.configure(api_key=config.GEMINI_API_KEY)
 
 # Initialize model
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def generate_scenario(student_nim: str, student_name: str, dataset: dict) -> Scenario:
     """
