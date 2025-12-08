@@ -27,7 +27,7 @@ def create_app():
     ], supports_credentials=True)
     
     # Register blueprints
-    from backend.routes import auth, datasets, assignments, chat, submissions, grading
+    from backend.routes import auth, datasets, assignments, chat, submissions, grading, debug
 
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(datasets.bp, url_prefix='/api/datasets')
@@ -35,6 +35,7 @@ def create_app():
     app.register_blueprint(chat.bp, url_prefix='/api/chat')
     app.register_blueprint(submissions.bp, url_prefix='/api/submissions')
     app.register_blueprint(grading.bp, url_prefix='/api/grading')
+    app.register_blueprint(debug.bp, url_prefix='/api/debug')
     
     # Health check endpoint
     @app.route('/api/health')
