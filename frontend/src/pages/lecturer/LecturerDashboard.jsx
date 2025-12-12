@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { datasetAPI, authAPI, gradingAPI } from '../../services/api';
+import { datasetAPI, authAPI, gradingAPI, searchAPI } from '../../services/api';
 
 const LecturerDashboard = () => {
     const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('datasets');
     const [datasets, setDatasets] = useState([]);
     const [students, setStudents] = useState([]);
+    const [totalStudents, setTotalStudents] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Dataset form state
     const [showDatasetForm, setShowDatasetForm] = useState(false);
@@ -27,10 +29,15 @@ const LecturerDashboard = () => {
     // Grading state
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [gradeForm, setGradeForm] = useState({ score: '', feedback: '' });
+    const [gradingPage, setGradingPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
-        loadData();
-    }, [activeTab]);
+        if (!isSearching) {
+            loadData();
+        }
+    }, [activeTab, gradingPage, isSearching, itemsPerPage]);
 
     const loadData = async () => {
         setLoading(true);
@@ -39,14 +46,45 @@ const LecturerDashboard = () => {
                 const response = await datasetAPI.getAll();
                 setDatasets(response.data.datasets);
             } else if (activeTab === 'grading') {
-                const response = await gradingAPI.getAllStudents();
+                const response = await gradingAPI.getAllStudents(gradingPage, itemsPerPage);
                 setStudents(response.data.students);
+                setTotalStudents(response.data.total || 0);
             }
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) {
+            setIsSearching(false);
+            return;
+        }
+
+        setLoading(true);
+        setIsSearching(true);
+        try {
+            const response = await searchAPI.searchStudents(searchQuery);
+            setStudents(response.data.students);
+            // Search returns all results, so hide pagination by setting total to current length (or handle separate isSearching UI)
+            setTotalStudents(response.data.students.length);
+        } catch (error) {
+            console.error('Error searching students:', error);
+            alert('Failed to search students');
+            setIsSearching(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setIsSearching(false);
+        setGradingPage(1);
+        // loadData will be triggered by effect
     };
 
     const handleCreateDataset = async (e) => {
@@ -142,7 +180,10 @@ const LecturerDashboard = () => {
                     {['datasets', 'students', 'grading'].map((tab) => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                if (tab === 'grading') setGradingPage(1);
+                            }}
                             style={{
                                 padding: 'var(--spacing-md) var(--spacing-lg)',
                                 background: activeTab === tab ? 'white' : 'transparent',
@@ -325,7 +366,40 @@ const LecturerDashboard = () => {
                 {/* Grading Tab */}
                 {activeTab === 'grading' && (
                     <div>
-                        <h2>📝 Student Grading</h2>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
+                            <h2>📝 Student Grading</h2>
+                            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 'var(--spacing-sm)' }}>
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => {
+                                        setItemsPerPage(Number(e.target.value));
+                                        setGradingPage(1);
+                                    }}
+                                    className="form-input"
+                                    style={{ width: 'auto', cursor: 'pointer' }}
+                                >
+                                    <option value={10}>10 / page</option>
+                                    <option value={20}>20 / page</option>
+                                    <option value={50}>50 / page</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Search by Name or NIM..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{ width: '250px' }}
+                                />
+                                <button type="submit" className="btn btn-primary">
+                                    Search
+                                </button>
+                                {isSearching && (
+                                    <button type="button" onClick={handleClearSearch} className="btn btn-secondary">
+                                        Clear
+                                    </button>
+                                )}
+                            </form>
+                        </div>
                         {loading ? (
                             <div style={{ textAlign: 'center', padding: 'var(--spacing-3xl)' }}>
                                 <div className="spinner" style={{ margin: '0 auto' }}></div>
@@ -335,71 +409,98 @@ const LecturerDashboard = () => {
                                 <p style={{ color: 'var(--text-tertiary)' }}>No students found. Upload a roster first.</p>
                             </div>
                         ) : (
-                            <div className="grid" style={{ marginTop: 'var(--spacing-xl)' }}>
-                                {students.map((studentData) => (
-                                    <div key={studentData.student.nim} className="card">
-                                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                                            <h3 style={{ marginBottom: 'var(--spacing-xs)' }}>{studentData.student.name}</h3>
-                                            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 0 }}>
-                                                NIM: {studentData.student.nim}
-                                            </p>
+                            <>
+                                <div className="grid" style={{ marginTop: 'var(--spacing-xl)' }}>
+                                    {students.map((studentData) => (
+                                        <div key={studentData.student.nim} className="card">
+                                            <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                                                <h3 style={{ marginBottom: 'var(--spacing-xs)' }}>{studentData.student.name}</h3>
+                                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 0 }}>
+                                                    NIM: {studentData.student.nim}
+                                                </p>
+                                            </div>
+
+                                            {!studentData.assignment ? (
+                                                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>No assignment yet</p>
+                                            ) : (
+                                                <>
+                                                    <div style={{ padding: 'var(--spacing-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
+                                                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--spacing-xs)' }}>
+                                                            Scenario:
+                                                        </div>
+                                                        <div style={{ fontSize: 'var(--text-sm)' }}>
+                                                            {studentData.assignment.scenario.scenario_title}
+                                                        </div>
+                                                    </div>
+
+                                                    {studentData.submissions.length > 0 && (
+                                                        <div style={{ marginBottom: 'var(--spacing-md)' }}>
+                                                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--spacing-sm)' }}>
+                                                                Submissions:
+                                                            </div>
+                                                            {studentData.submissions.map((sub) => (
+                                                                <div key={sub.id} style={{ marginBottom: 'var(--spacing-sm)' }}>
+                                                                    <span className={`badge ${sub.submission_type === 'final' ? 'badge-success' : 'badge-primary'}`} style={{ marginRight: 'var(--spacing-sm)' }}>
+                                                                        {sub.submission_type}
+                                                                    </span>
+                                                                    <a href={sub.link_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--text-sm)' }}>
+                                                                        View
+                                                                    </a>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {studentData.grade ? (
+                                                        <div style={{ padding: 'var(--spacing-md)', background: '#dcfce7', borderRadius: 'var(--radius-md)' }}>
+                                                            <div style={{ fontWeight: 600, color: '#166534', marginBottom: 'var(--spacing-xs)' }}>
+                                                                Score: {studentData.grade.score}/100
+                                                            </div>
+                                                            {studentData.grade.feedback && (
+                                                                <div style={{ fontSize: 'var(--text-sm)', color: '#166534' }}>
+                                                                    {studentData.grade.feedback}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => setSelectedStudent(studentData)}
+                                                            className="btn btn-primary btn-sm"
+                                                        >
+                                                            Grade Student
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
+                                    ))}
+                                </div>
 
-                                        {!studentData.assignment ? (
-                                            <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>No assignment yet</p>
-                                        ) : (
-                                            <>
-                                                <div style={{ padding: 'var(--spacing-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--spacing-md)' }}>
-                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--spacing-xs)' }}>
-                                                        Scenario:
-                                                    </div>
-                                                    <div style={{ fontSize: 'var(--text-sm)' }}>
-                                                        {studentData.assignment.scenario.scenario_title}
-                                                    </div>
-                                                </div>
-
-                                                {studentData.submissions.length > 0 && (
-                                                    <div style={{ marginBottom: 'var(--spacing-md)' }}>
-                                                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--spacing-sm)' }}>
-                                                            Submissions:
-                                                        </div>
-                                                        {studentData.submissions.map((sub) => (
-                                                            <div key={sub.id} style={{ marginBottom: 'var(--spacing-sm)' }}>
-                                                                <span className={`badge ${sub.submission_type === 'final' ? 'badge-success' : 'badge-primary'}`} style={{ marginRight: 'var(--spacing-sm)' }}>
-                                                                    {sub.submission_type}
-                                                                </span>
-                                                                <a href={sub.link_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--text-sm)' }}>
-                                                                    View
-                                                                </a>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {studentData.grade ? (
-                                                    <div style={{ padding: 'var(--spacing-md)', background: '#dcfce7', borderRadius: 'var(--radius-md)' }}>
-                                                        <div style={{ fontWeight: 600, color: '#166534', marginBottom: 'var(--spacing-xs)' }}>
-                                                            Score: {studentData.grade.score}/100
-                                                        </div>
-                                                        {studentData.grade.feedback && (
-                                                            <div style={{ fontSize: 'var(--text-sm)', color: '#166534' }}>
-                                                                {studentData.grade.feedback}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => setSelectedStudent(studentData)}
-                                                        className="btn btn-primary btn-sm"
-                                                    >
-                                                        Grade Student
-                                                    </button>
-                                                )}
-                                            </>
-                                        )}
+                                {/* Pagination Controls (Hide when searching) */}
+                                {!isSearching && totalStudents > itemsPerPage && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--spacing-sm)', marginTop: 'var(--spacing-xl)' }}>
+                                        <button
+                                            onClick={() => setGradingPage(p => Math.max(1, p - 1))}
+                                            disabled={gradingPage === 1}
+                                            className="btn btn-secondary"
+                                            style={{ opacity: gradingPage === 1 ? 0.5 : 1 }}
+                                        >
+                                            Previous
+                                        </button>
+                                        <span style={{ display: 'flex', alignItems: 'center', padding: '0 var(--spacing-md)' }}>
+                                            Page {gradingPage} of {Math.ceil(totalStudents / itemsPerPage)}
+                                        </span>
+                                        <button
+                                            onClick={() => setGradingPage(p => Math.min(Math.ceil(totalStudents / itemsPerPage), p + 1))}
+                                            disabled={gradingPage >= Math.ceil(totalStudents / itemsPerPage)}
+                                            className="btn btn-secondary"
+                                            style={{ opacity: gradingPage >= Math.ceil(totalStudents / itemsPerPage) ? 0.5 : 1 }}
+                                        >
+                                            Next
+                                        </button>
                                     </div>
-                                ))}
-                            </div>
+                                )}
+                            </>
                         )}
 
                         {/* Grading Modal */}

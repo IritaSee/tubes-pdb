@@ -70,9 +70,13 @@ export const submissionAPI = {
 
 // Grading API
 export const gradingAPI = {
-    getAllStudents: () => api.get('/grading/students'),
+    getAllStudents: (page, limit) => api.get('/grading/students', { params: { page, limit } }),
     submitGrade: (assignmentId, score, feedback) =>
         api.post('/grading/grade', { assignment_id: assignmentId, score, feedback }),
+};
+
+export const searchAPI = {
+    searchStudents: (query) => api.get(`/grading/search/${query}`),
 };
 
 export default api;
