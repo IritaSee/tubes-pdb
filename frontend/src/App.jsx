@@ -4,7 +4,12 @@ import StudentLogin from './pages/student/StudentLogin';
 import StudentDashboard from './pages/student/StudentDashboard';
 import LecturerLogin from './pages/lecturer/LecturerLogin';
 import LecturerDashboard from './pages/lecturer/LecturerDashboard';
+
 import './index.css';
+
+const rawPostSemester = import.meta.env.VITE_POST_SEMESTER;
+const IS_POST_SEMESTER = rawPostSemester.toLowerCase() === 'true';
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredType }) => {
@@ -32,6 +37,36 @@ const ProtectedRoute = ({ children, requiredType }) => {
 // Landing Page
 const LandingPage = () => {
   const { isAuthenticated, userType } = useAuth();
+
+  if (IS_POST_SEMESTER) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <div className="container" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', textAlign: 'center' }}>
+            <div style={{ marginBottom: 'var(--spacing-2xl)' }}>
+              <h1 style={{ fontSize: 'var(--text-5xl)', background: 'linear-gradient(135deg, #667eea, #764ba2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 'var(--spacing-md)' }}>
+                🏥 Biomedical Analyst
+              </h1>
+              <p style={{ fontSize: 'var(--text-lg)', color: 'var(--text-secondary)' }}>
+                Immersive Data Analytics Roleplay Platform
+              </p>
+            </div>
+            <h2 style={{ fontSize: 'var(--text-4xl)', marginBottom: 'var(--spacing-lg)', color: 'var(--text-primary)', fontWeight: '600' }}>
+              Thank you TB-48 for the great semester!
+            </h2>
+            <p style={{ fontSize: 'var(--text-md)', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-xl)' }}>
+              We're preparing for the new semester. Check back soon! <br/> - INP, DZI.
+            </p>
+            <div style={{ marginTop: 'var(--spacing-2xl)', padding: 'var(--spacing-lg)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)', marginBottom: 0 }}>
+                💡 Students analyze real biomedical datasets through immersive scenarios
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to={userType === 'student' ? '/student/dashboard' : '/lecturer/dashboard'} replace />;
